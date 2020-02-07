@@ -52,7 +52,7 @@
 #define DEF_PIX_FMT		"UYVY"
 
 #define LB_DRV_NAME 	"v4l2loopback"
-#define LB_NAME_OFFSET	3 // starts with /dev/videoN(offset)
+#define LB_NAME_OFFSET	8 // starts with /dev/videoN(offset)
 
 static char VIDEO_DEV[20] = DEF_VIDEO_DEV;
 
@@ -73,7 +73,7 @@ static struct pthr_start {
     int pix_format;
 } th_start[] = {
     {
-        .lb_name = "/dev/video3",
+        .lb_name = "/dev/video8",
         .lb_codec = SIMPLE_LB,
         .lb_w = -1,
         .lb_h = -1,
@@ -82,7 +82,7 @@ static struct pthr_start {
         .pix_format = V4L2_PIX_FMT_YUV420,
     },
     {
-        .lb_name = "/dev/video4",
+        .lb_name = "/dev/video9",
         .lb_codec = H264_LB,
         .lb_w = -1,
         .lb_h = -1,
@@ -155,6 +155,11 @@ int main(const int argc, const char **argv) {
 
 	width = DEF_VIDEO_W;
 	height = DEF_VIDEO_H;
+
+    if (argc < 2) {
+        printf("Usage: %s -v videodev -i input file -o output file -w width -h height -f format\n", argv[0]);
+        exit(0);
+    }
 
 	while ((opt = getopt(argc, argv, "v:i:o:w:h:f:")) != -1) {
         switch (opt) {
@@ -408,12 +413,19 @@ int main(const int argc, const char **argv) {
         			int u_offset = width*height;
         			int v_offset = u_offset + (u_offset/4);
 
-        			UYVYTo420P_neon(buffers[buf.index].start, src_stride,
-		               		   pb, dst_stride_y,
-		               		   pb + u_offset, dst_stride_uv,
-		               		   pb + v_offset, dst_stride_uv,
-		                       width, height);
-
+                    if (cap_dev_pix_fmt == V4L2_PIX_FMT_UYVY) {
+            			UYVYTo420P_neon(buffers[buf.index].start, src_stride,
+    		               		   pb, dst_stride_y,
+    		               		   pb + u_offset, dst_stride_uv,
+    		               		   pb + v_offset, dst_stride_uv,
+    		                       width, height);
+                    } else if (cap_dev_pix_fmt == V4L2_PIX_FMT_YUYV) {
+                        YUYVTo420P_neon(buffers[buf.index].start, src_stride,
+                                   pb, dst_stride_y,
+                                   pb + u_offset, dst_stride_uv,
+                                   pb + v_offset, dst_stride_uv,
+                                   width, height);
+                    }
         		}
 #else 
         		uyvy422to420(width, height, buffers[buf.index].start, pb);
