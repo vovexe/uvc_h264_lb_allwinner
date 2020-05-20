@@ -465,7 +465,6 @@ uint32_t ve_virt2phys(void *ptr) {
 				m = m->next;
 				continue;
 			}
-			
 			//printf("c->mem: virt 0x%08X, phys 0x%08X, ptr 0x%08X\n", (unsigned int)mem->virt, mem->phys, (unsigned int)ptr);
 			if (mem->virt == NULL)
 				continue;
@@ -511,7 +510,7 @@ void ve_flush_cache(struct ve_mem *mem) {
 		return;
 #ifdef USE_ION
 	if (ve.ion_fd != -1) {
-		sunxi_cache_range range = {
+		cedarv_cache_range range = {
 			.start = (long)mem->virt,
 			.end = (long)mem->virt + mem->size,
 		};
