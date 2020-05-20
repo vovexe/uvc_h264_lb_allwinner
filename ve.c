@@ -28,9 +28,9 @@
 #include "ve.h"
 
 #ifdef USE_ION
-#include "kernel-headers/ion.h"
-#include "kernel-headers/ion_sunxi.h"
-#include "kernel-headers/cedar_ve.h"
+#include "ion.h"
+#include "ion_sunxi.h"
+//#include "kernel-headers/cedar_ve.h"
 
 #define container_of(ptr, type, member) ({                      \
 	const typeof( ((type *)0)->member ) *__mptr = (ptr);    \
