@@ -60,19 +60,20 @@ static inline uint32_t readl(void *addr)
 #define VE_ENGINE_H264			0x1
 #define VE_ENGINE_AVC			0xb
 
-#define VE_CTRL				0x000
-#define VE_VERSION			0x0f0
+#define VE_CTRL				    0x000
+#define VE_RESET                0x004
+#define VE_VERSION			    0x0f0
 
 #define VE_MPEG_PIC_HDR			0x100
 #define VE_MPEG_VOP_HDR			0x104
 #define VE_MPEG_SIZE			0x108
 #define VE_MPEG_FRAME_SIZE		0x10c
-#define VE_MPEG_MBA			0x110
+#define VE_MPEG_MBA			    0x110
 #define VE_MPEG_CTRL			0x114
 #define VE_MPEG_TRIGGER			0x118
 #define VE_MPEG_STATUS			0x11c
-#define VE_MPEG_TRBTRD_FIELD		0x120
-#define VE_MPEG_TRBTRD_FRAME		0x124
+#define VE_MPEG_TRBTRD_FIELD    0x120
+#define VE_MPEG_TRBTRD_FRAME	0x124
 #define VE_MPEG_VLD_ADDR		0x128
 #define VE_MPEG_VLD_OFFSET		0x12c
 #define VE_MPEG_VLD_LEN			0x130
@@ -86,15 +87,15 @@ static inline uint32_t readl(void *addr)
 #define VE_MPEG_FWD_CHROMA		0x154
 #define VE_MPEG_BACK_LUMA		0x158
 #define VE_MPEG_BACK_CHROMA		0x15c
-#define VE_MPEG_IQ_MIN_INPUT		0x180
+#define VE_MPEG_IQ_MIN_INPUT	0x180
 #define VE_MPEG_QP_INPUT		0x184
 #define VE_MPEG_JPEG_SIZE		0x1b8
-#define VE_MPEG_JPEG_RES_INT		0x1c0
+#define VE_MPEG_JPEG_RES_INT	0x1c0
 #define VE_MPEG_ROT_LUMA		0x1cc
-#define VE_MPEG_ROT_CHROMA		0x1d0
-#define VE_MPEG_SDROT_CTRL		0x1d4
-#define VE_MPEG_RAM_WRITE_PTR		0x1e0
-#define VE_MPEG_RAM_WRITE_DATA		0x1e4
+#define VE_MPEG_ROT_CHROMA	    0x1d0
+#define VE_MPEG_SDROT_CTRL	    0x1d4
+#define VE_MPEG_RAM_WRITE_PTR   0x1e0
+#define VE_MPEG_RAM_WRITE_DATA  0x1e4
 
 #define VE_H264_FRAME_SIZE		0x200
 #define VE_H264_PIC_HDR			0x204

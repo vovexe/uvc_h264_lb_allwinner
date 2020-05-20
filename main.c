@@ -41,6 +41,18 @@
 #define USE_V4L_DEV
 //#define USE_FPS_MEASUREMENT
 
+/*********************** H3 measurement ******************
+CSC NEON YUV 4:2:2 => NV12
+    640x480 = 1ms
+    1280x720 = 3ms
+    1920x1080 = 7ms
+
+H264 encode
+    640x480 = 4ms
+    1280x720 = 12ms
+    1920x1080 = 27ms
+**********************************************************/
+
 #define DEF_VIDEO_DEV 	"/dev/video0"
 #define DEF_VIDEO_H		640
 #define DEF_VIDEO_W		480
@@ -88,7 +100,7 @@ static struct pthr_start {
     }
 };
 
-#ifdef USE_FPS_MEASUREMENT
+
 # ifndef MAX
 #  define MAX(x, y) ( ((x)>(y))?(x):(y) )
 # endif
@@ -110,7 +122,7 @@ unsigned long int time_diff(struct timespec *ts1, struct timespec *ts2) {
 
     return((ts.tv_sec * 1000000000) + ts.tv_nsec);
 }
-#endif
+
 
 /*
  *
@@ -314,7 +326,7 @@ int main(const int argc, const char **argv) {
 #ifdef USE_FPS_MEASUREMENT
         struct timespec tm[2];
         clock_gettime(CLOCK_MONOTONIC, &tm[0]);
-#endif        
+#endif      
 
         FD_ZERO(&fds);
         FD_SET(video_fd, &fds);

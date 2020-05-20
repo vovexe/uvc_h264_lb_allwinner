@@ -441,6 +441,13 @@ int h264enc_encode_picture(h264enc *c)
 	uint32_t status = readl(c->regs + VE_AVC_STATUS);
 	writel(status, c->regs + VE_AVC_STATUS);
 
+	/* reset VE on failed status */
+	if ((status & 0x3) != 0x1) {
+		writel(0x1, c->regs + VE_RESET);
+		usleep(1000);
+		writel(0x0, c->regs + VE_RESET);
+	}
+
 	/* save bytestream length */
 	c->bytestream_length = readl(c->regs + VE_AVC_VLE_LENGTH) / 8;
 
