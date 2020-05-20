@@ -52,7 +52,7 @@
 static char VIDEO_DEV[20] = DEF_VIDEO_DEV;
 
 
-#define N_LB_DEV    2
+#define N_LB_DEV    1
 /* graphic thread init struct */
 static struct pthr_start {
     char *lb_name;
@@ -69,22 +69,22 @@ static struct pthr_start {
 } th_start[] = {
     {
         .lb_name = "/dev/video8",
-        .lb_codec = SIMPLE_LB,
+        .lb_codec = H264_LB,
         .lb_w = -1,
         .lb_h = -1,
         .tofile = 0,
         .file_fd = -1,
-        .pix_format = V4L2_PIX_FMT_YUV420,
+        .pix_format = V4L2_PIX_FMT_H264,
     },
     {
         .lb_name = "/dev/video9",
         .lb_codec = H264_LB,
         .lb_w = -1,
         .lb_h = -1,
-        .tofile = 1,
+        .tofile = 0,
         .file_fd = -1,
         .fname = "out_sunxi_tst.mkv",
-        .pix_format = V4L2_PIX_FMT_H264,
+        .pix_format = V4L2_PIX_FMT_YUV420,
     }
 };
 
@@ -206,11 +206,11 @@ int main(const int argc, const char **argv) {
 #if defined(USE_V4L_DEV)
 	open_capture_dev(VIDEO_DEV, &video_fd);
 	if (video_fd < 0) {
-		errno_exit("video device");
+		errno_exit("open video device");
 	}
 
 	if (dev_try_format(video_fd,  width, height, cap_dev_pix_fmt)) {
-		printf("Incompattible capture pixel format!\n");
+		printf("Incompattible capture pixel format %c%c%c%c!\n", FOURCC_PRINTF_PARMS(cap_dev_pix_fmt));
 		close(video_fd);
         goto app_exit;
 	}

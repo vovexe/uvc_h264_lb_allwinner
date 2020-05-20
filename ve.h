@@ -22,6 +22,12 @@
 
 #include <stdint.h>
 
+struct ve_mem {
+    void *virt;
+    uint32_t phys;
+    int size;
+};
+
 int ve_open(void);
 void ve_close(void);
 int ve_get_version(void);
@@ -29,10 +35,11 @@ int ve_wait(int timeout);
 void *ve_get(int engine, uint32_t flags);
 void ve_put(void);
 
-void *ve_malloc(int size);
-void ve_free(void *ptr);
+struct ve_mem *ve_malloc(int size);
+void ve_free(struct ve_mem *mem);
+void ve_flush_cache(struct ve_mem *mem);
+
 uint32_t ve_virt2phys(void *ptr);
-void ve_flush_cache(void *start, int len);
 
 static inline void writeb(uint8_t val, void *addr)
 {

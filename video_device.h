@@ -17,6 +17,7 @@ enum {
 
 #define CLEAR(x) memset(&(x), 0, sizeof(x))
 #define V4L2MMAP_NBBUFFER 4
+#define FOURCC_PRINTF_PARMS(x) (x), (x) >> 8, (x) >> 16, (x) >> 24
 
 void open_capture_dev(char *name, int *fd);
 int setup_capture_device(char *name, int fd, int *w, int *h, int fps, int pix_format);
