@@ -389,7 +389,9 @@ int main(const int argc, const char **argv) {
 #else		    		
 		    		yuyv422toNV12(width, height, buffers[buf.index].start, input_buf);
 #endif
-		    	} else {
+		    	} else if (cap_dev_pix_fmt == V4L2_PIX_FMT_NV12) {
+                    memcpy(input_buf, buffers[buf.index].start, buf.bytesused);
+                } else {
 		    		continue;
 		    	}
    		

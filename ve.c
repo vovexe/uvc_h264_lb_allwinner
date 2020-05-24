@@ -28,6 +28,7 @@
 #include "ve.h"
 
 #ifdef USE_ION
+#include <stddef.h>
 #include "ion.h"
 #include "ion_sunxi.h"
 //#include "kernel-headers/cedar_ve.h"
@@ -510,7 +511,7 @@ void ve_flush_cache(struct ve_mem *mem) {
 		return;
 #ifdef USE_ION
 	if (ve.ion_fd != -1) {
-		cedarv_cache_range range = {
+		struct cedarv_cache_range range = {
 			.start = (long)mem->virt,
 			.end = (long)mem->virt + mem->size,
 		};

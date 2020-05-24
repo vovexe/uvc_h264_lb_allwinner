@@ -77,10 +77,52 @@ int dev_try_format(int fd, int w, int h, int fmtid) {
     if(fmt.fmt.pix.pixelformat != fmtid) {
         return -1;
     }
-
+/*
     if (xioctl(fd, VIDIOC_S_FMT, &fmt)<0) {
         return -1;
     }
+*/    
+    return 0;
+}
+
+int v4l2_set_input(int *fd) {
+    /*
+     * define video input
+     * vfe_v4l2 the driver is forced to input = -1
+     * set as the input = 0, works fine.
+     */
+    struct v4l2_input input;
+    int count = 0;
+    CLEAR(input);
+    input.index = count;
+    while(!xioctl(*fd, VIDIOC_ENUMINPUT, &input)) {
+        input.index = ++count;
+    }
+    count -= 1;
+    
+    if (count <= -1) {
+        return -1;
+        printf("Failed to set input\n");
+    }
+    
+    if(xioctl(*fd, VIDIOC_S_INPUT, &count) == -1) {
+        printf("Error selecting input %d", count);
+        return -1;
+    }
+    return 0;
+}
+
+int v4l2_set_fps(int *fd, int *fps) {
+    struct v4l2_streamparm setfps;
+    CLEAR(setfps);
+    setfps.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+    setfps.parm.capture.timeperframe.numerator = 1;
+    setfps.parm.capture.timeperframe.denominator = *fps;
+    if(xioctl(*fd, VIDIOC_S_PARM, &setfps) == -1) {
+        printf("Error setting frame rate\n");
+        return 1;
+    }
+    *fps = setfps.parm.capture.timeperframe.denominator;
     return 0;
 }
 
@@ -136,6 +178,29 @@ void open_capture_dev(char *name, int *fd) {
         fprintf(stderr, "%s does not support streaming i/o\n", name);
         exit(EXIT_FAILURE);
     }
+#if 1
+    {
+        struct v4l2_fmtdesc fmtdesc;
+        fmtdesc.index = 0;
+        fmtdesc.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
+        char c, e;
+        char fourcc[5];
+        printf("  FMT : CE Desc\n--------------------\n");
+        while (0 == xioctl(*fd, VIDIOC_ENUM_FMT, &fmtdesc)) {
+            strncpy(fourcc, (char *)&fmtdesc.pixelformat, 4);
+            c = fmtdesc.flags & 1? 'C' : ' ';
+            e = fmtdesc.flags & 2? 'E' : ' ';
+            printf("  %s: %c%c %s\n", fourcc, c, e, fmtdesc.description);
+            fmtdesc.index++;
+        }
+    }
+#endif
+#if defined(SUNXI_VFE)    
+    /* otherwise we are not able to set format */
+    if (v4l2_set_input(fd)) {
+        exit(EXIT_FAILURE);
+    }    
+#endif    
 }
 
 
@@ -146,7 +211,7 @@ int setup_capture_device(char *name, int fd, int *w, int *h, int fps, int pix_fo
     struct v4l2_streamparm parm;
     struct v4l2_format fmt;
 
-/*
+
     // USB camera and so
     CLEAR(parm);
     parm.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;
@@ -155,7 +220,7 @@ int setup_capture_device(char *name, int fd, int *w, int *h, int fps, int pix_fo
 
     if (-1 == xioctl(fd, VIDIOC_S_PARM, &parm))
         perror("VIDIOC_S_PARM");
- */   
+    
 
     /* get framerate */
     CLEAR(parm);
