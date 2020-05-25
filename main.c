@@ -231,51 +231,57 @@ int main(const int argc, const char **argv) {
     buffers = init_capt_mmap(VIDEO_DEV, video_fd, &n_buffers);
 #endif	
 
-	struct h264enc_params params;
-	params.src_width = (width + 15) & ~15;
-	params.width = width;
-	params.src_height = (height + 15) & ~15;
-	params.height = height;
-	params.src_format = H264_FMT_NV12;
-	params.profile_idc = 77;
-	params.level_idc = 41;
-	params.entropy_coding_mode = H264_EC_CABAC;
-	params.qp = 24;
-	params.keyframe_interval = 25;
-	params.work_mode = ENC_MODE_STREAMING;
+    h264enc *encoder = NULL;
+    void *output_buf = NULL;
+    void *input_buf = NULL;
 
-	if (!ve_open()) {
-		printf("Failed to open CedarX device %s\n", "/dev/cedar_dev");
-		return EXIT_FAILURE;
-	}
+    if (cap_dev_pix_fmt != V4L2_PIX_FMT_H264) {
+    	struct h264enc_params params;
+    	params.src_width = (width + 15) & ~15;
+    	params.width = width;
+    	params.src_height = (height + 15) & ~15;
+    	params.height = height;
+    	params.src_format = H264_FMT_NV12;
+    	params.profile_idc = 77;
+    	params.level_idc = 41;
+    	params.entropy_coding_mode = H264_EC_CABAC;
+    	params.qp = 24;
+    	params.keyframe_interval = 25;
+    	params.work_mode = ENC_MODE_STREAMING;
 
-	h264enc *encoder = h264enc_new(&params);
+    	if (!ve_open()) {
+    		printf("Failed to open CedarX device %s\n", "/dev/cedar_dev");
+    		return EXIT_FAILURE;
+    	}
 
-	if (encoder == NULL) {
-		printf("could not create encoder\n");
-		goto err;
-	} else {
-		printf("H264 encoder initialized: %dx%d\n", width, height);
-	}
+    	h264enc *encoder = h264enc_new(&params);
 
-	void* output_buf = h264enc_get_bytestream_buffer(encoder);
+    	if (encoder == NULL) {
+    		printf("could not create encoder\n");
+    		goto err;
+    	} else {
+    		printf("H264 encoder initialized: %dx%d\n", width, height);
+    	}
 
-	int input_size = params.src_width * (params.src_height + params.src_height / 2);
-	void* input_buf = h264enc_get_input_buffer(encoder);
-	size_out = ((width) * (height) * 12 / 8);
+    	output_buf = h264enc_get_bytestream_buffer(encoder);
 
-	if (in > 0 && out > 0) {
-		printf("Runnig h264 encoding from file %s...\n", input_file);
-		while (read_frame(in, input_buf, input_size)) {
-			if (h264enc_encode_picture(encoder)) {
-				write(out, output_buf, h264enc_get_bytestream_length(encoder));
-			} else {
-				printf("encoding error\n");
-			}
-		}
-		printf("Done!\n");
-		goto complete;
-	}
+    	int input_size = params.src_width * (params.src_height + params.src_height / 2);
+    	input_buf = h264enc_get_input_buffer(encoder);
+    	size_out = ((width) * (height) * 12 / 8);
+
+    	if (in > 0 && out > 0) {
+    		printf("Runnig h264 encoding from file %s...\n", input_file);
+    		while (read_frame(in, input_buf, input_size)) {
+    			if (h264enc_encode_picture(encoder)) {
+    				write(out, output_buf, h264enc_get_bytestream_length(encoder));
+    			} else {
+    				printf("encoding error\n");
+    			}
+    		}
+    		printf("Done!\n");
+    		goto complete;
+    	}
+    }
 
 #if defined(USE_V4L_DEV)
 	printf("Runnig h264 encoding from V4L device %s...\n", VIDEO_DEV);
@@ -363,52 +369,66 @@ int main(const int argc, const char **argv) {
         for (i = 0;i < N_LB_DEV;i++) {
         	int len = 0;
         	void *pb = NULL;
-
+            /* just copy to loopback if input is H264 */
         	if (th_start[i].lb_codec == H264_LB) {  
+                if (cap_dev_pix_fmt == V4L2_PIX_FMT_H264) {
+                    pb = buffers[buf.index].start;
+                    len = buf.bytesused;
+                    wrt_to_lpbck(th_start[i].lb_fd, 
+                                  pb,
+                                  len, 
+                                  n_buffers, 
+                                  th_start[i].lb_pbuf);
+                } else {
 #if defined(CPU_HAS_NEON) 		        	
         			int src_stride = width*2;
         			int dst_stride_y = width;
         			int dst_stride_uv = width;
         			int uv_offset = width*height;
 #endif        			        	 
-        		if (cap_dev_pix_fmt == V4L2_PIX_FMT_UYVY) {		
+        		    if (cap_dev_pix_fmt == V4L2_PIX_FMT_UYVY) {		
 #if defined(CPU_HAS_NEON) 		        	
-        			UYVYToNV12_neon(buffers[buf.index].start, src_stride,
+        			    UYVYToNV12_neon(buffers[buf.index].start, src_stride,
 		               		   input_buf, dst_stride_y,
 		               		   input_buf + uv_offset, dst_stride_uv,
 		                       width, height);
 #else
-        			uyvy422toNV12(width, height, buffers[buf.index].start, input_buf);
+        			    uyvy422toNV12(width, height, buffers[buf.index].start, input_buf);
 #endif        			
-		    	} else if (cap_dev_pix_fmt == V4L2_PIX_FMT_YUYV) {
+		    	     } else if (cap_dev_pix_fmt == V4L2_PIX_FMT_YUYV) {
 #if defined(CPU_HAS_NEON) 
-		    		YUYVToNV12_neon(buffers[buf.index].start, src_stride,
+		    		    YUYVToNV12_neon(buffers[buf.index].start, src_stride,
 		               		   input_buf, dst_stride_y,
 		               		   input_buf + uv_offset, dst_stride_uv,
 		                       width, height);
 #else		    		
-		    		yuyv422toNV12(width, height, buffers[buf.index].start, input_buf);
+		    		    yuyv422toNV12(width, height, buffers[buf.index].start, input_buf);
 #endif
-		    	} else if (cap_dev_pix_fmt == V4L2_PIX_FMT_NV12) {
-                    memcpy(input_buf, buffers[buf.index].start, buf.bytesused);
-                } else {
-		    		continue;
-		    	}
+		    	    } else if (cap_dev_pix_fmt == V4L2_PIX_FMT_NV12) {
+                        memcpy(input_buf, buffers[buf.index].start, buf.bytesused);
+                    } else {
+		    		    continue;
+		    	    }
    		
-        		if (h264enc_encode_picture(encoder)) {       			
-					len = h264enc_get_bytestream_length(encoder);
-					pb = output_buf;
-				} 	
+            		if (h264enc_encode_picture(encoder)) {       			
+    					len = h264enc_get_bytestream_length(encoder);
+    					pb = output_buf;
+    				} 	
 
-				wrt_to_lpbck(th_start[i].lb_fd, 
-							  pb,
-							  len, 
-							  n_buffers, 
-							  th_start[i].lb_pbuf);
-
+    				wrt_to_lpbck(th_start[i].lb_fd, 
+    							  pb,
+    							  len, 
+    							  n_buffers, 
+    							  th_start[i].lb_pbuf);
+                }    
         	} else if (th_start[i].lb_codec == SIMPLE_LB) {
         		struct v4l2_buffer dev_ibuf;
     			CLEAR(dev_ibuf);
+
+                if (cap_dev_pix_fmt == V4L2_PIX_FMT_H264) {
+                    continue;
+                }
+
         		pb = obtain_lbck_current_input_buf(th_start[i].lb_fd, n_buffers, th_start[i].lb_pbuf, &dev_ibuf);
 
         		if (th_start[i].pix_format == cap_dev_pix_fmt) {
@@ -476,7 +496,8 @@ int main(const int argc, const char **argv) {
 #endif	
 
 complete:
-	h264enc_free(encoder);
+    if (encoder)
+	   h264enc_free(encoder);
 
 err:
 	ve_close();
