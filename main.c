@@ -39,7 +39,7 @@
 #include "csc.h"
 
 #define USE_V4L_DEV
-//#define USE_FPS_MEASUREMENT
+#define USE_FPS_MEASUREMENT
 
 /*********************** H3 measurement ******************
 CSC NEON YUV 4:2:2 => NV12
@@ -254,7 +254,7 @@ int main(const int argc, const char **argv) {
     		return EXIT_FAILURE;
     	}
 
-    	h264enc *encoder = h264enc_new(&params);
+    	encoder = h264enc_new(&params);
 
     	if (encoder == NULL) {
     		printf("could not create encoder\n");
@@ -369,6 +369,7 @@ int main(const int argc, const char **argv) {
         for (i = 0;i < N_LB_DEV;i++) {
         	int len = 0;
         	void *pb = NULL;
+
             /* just copy to loopback if input is H264 */
         	if (th_start[i].lb_codec == H264_LB) {  
                 if (cap_dev_pix_fmt == V4L2_PIX_FMT_H264) {
