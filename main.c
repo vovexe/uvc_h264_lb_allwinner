@@ -37,10 +37,17 @@
 #include "video_device.h"
 #include "h264enc.h"
 #include "csc.h"
+#include "overlay.h"
 
 #define USE_V4L_DEV
 #define USE_FPS_MEASUREMENT
+#define USE_OVERLAY
 
+
+#if defined(USE_OVERLAY)
+#define LEFT_CORNER     0
+#define RIGHT_CORNER(w,l)    (w)-((l)*SG_W)
+#endif
 /*********************** H3 measurement ******************
 CSC NEON YUV 4:2:2 => NV12
     640x480 = 1ms
@@ -143,7 +150,7 @@ static int read_frame(int fd, void *buffer, int size) {
  *
  */
 int main(const int argc, const char **argv) {
-	int nframes_ps = 0;
+	int nframes_ps = 0, sfps = 0;
 	int in = -1, out = -1;
 	int size_out;
 	char input_file[50] = "";
@@ -335,6 +342,9 @@ int main(const int argc, const char **argv) {
     if (-1 == xioctl(video_fd, VIDIOC_STREAMON, &type))
         errno_exit("VIDIOC_STREAMON");
 
+#if defined(USE_OVERLAY)
+    sw_overlay_nv12_init();
+#endif    
     
     while (1) {
         fd_set fds;
@@ -421,6 +431,24 @@ int main(const int argc, const char **argv) {
                     } else {
 		    		    continue;
 		    	    }
+
+#if defined(USE_OVERLAY)
+                    {
+                        char buf[100]= {0};
+                        time_t t = time(NULL);
+                        struct tm tm = *localtime(&t);
+                        sprintf(buf, "%04d-%02d-%02d %02d:%02d:%02d", 
+                        tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday,
+                        tm.tm_hour, tm.tm_min, tm.tm_sec);
+                        // line 1
+                        int tlen = strlen(buf);
+                        sw_overlay_nv12(input_buf, buf, tlen, width, height, RIGHT_CORNER(width,tlen), TXT_LINE(0));
+                        // line 2
+                        sprintf(buf, "%c%c%c%c %dx%d %dFPS", FOURCC_PRINTF_PARMS(cap_dev_pix_fmt), width, height, sfps);
+                        tlen = strlen(buf);
+                        sw_overlay_nv12(input_buf, buf, tlen, width, height, RIGHT_CORNER(width,tlen), TXT_LINE(1));
+                    }
+#endif
    		
             		if (h264enc_encode_picture(encoder)) {       			
     					len = h264enc_get_bytestream_length(encoder);
@@ -481,16 +509,18 @@ int main(const int argc, const char **argv) {
         }
 
 #ifdef USE_FPS_MEASUREMENT
-            if (measurement_en) {
-                /* measure fps of the capture device */
-                clock_gettime(CLOCK_MONOTONIC, &tm[1]);
+            
+            /* measure fps of the capture device */
+            clock_gettime(CLOCK_MONOTONIC, &tm[1]);
 
-                int dt_ms = (time_diff(&tm[0], &tm[1])) / 1000000;
-                if (dt_ms >= 1000) {
+            int dt_ms = (time_diff(&tm[0], &tm[1])) / 1000000;
+            if (dt_ms >= 1000) {
+                if (measurement_en) {
                     printf("CAPTURE FPS: %d\n",nframes_ps);
-                    nframes_ps = 0;
                     measurement_en--;
                 }
+                sfps = nframes_ps;
+                nframes_ps = 0;    
             }
 #endif
         /* queue buffer */

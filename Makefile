@@ -14,7 +14,8 @@ SRC = main.c \
 	  h264enc.c \
 	  video_device.c \
 	  ve.c \
-	  csc.c
+	  csc.c \
+	  overlay.c
 
 
 CFLAGS = -Wall -O3 -I .
