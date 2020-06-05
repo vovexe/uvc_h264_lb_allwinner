@@ -158,7 +158,9 @@ int main(const int argc, const char **argv) {
 	int i, cnt;
 	char mod_param[128];
 	int opt;
+    unsigned int frame_rate = 30;
 	int cap_dev_pix_fmt =  v4l2_fourcc(DEF_PIX_FMT[0], DEF_PIX_FMT[1], DEF_PIX_FMT[2], DEF_PIX_FMT[3]);
+    int measurement_en = 0;
 
 	width = DEF_VIDEO_W;
 	height = DEF_VIDEO_H;
@@ -168,7 +170,7 @@ int main(const int argc, const char **argv) {
         exit(0);
     }
 
-	while ((opt = getopt(argc, argv, "v:i:o:w:h:f:")) != -1) {
+	while ((opt = getopt(argc, argv, "v:i:o:w:h:f:m:")) != -1) {
         switch (opt) {
             case 'v':
                 strcpy(VIDEO_DEV, optarg);
@@ -188,7 +190,10 @@ int main(const int argc, const char **argv) {
             case 'f':
                 cap_dev_pix_fmt = v4l2_fourcc(optarg[0], optarg[1], optarg[2], optarg[3]);
                 break;             
-                    
+            case 'm':
+                measurement_en = atoi(optarg);
+                break;
+
             default:
                 printf("Usage: %s -v videodev -i input file -o output file -w width -h height -f format\n", argv[0]);
                 exit(0);
@@ -228,6 +233,11 @@ int main(const int argc, const char **argv) {
 	}
 
     setup_capture_device(VIDEO_DEV, video_fd, &width, &height, 30, cap_dev_pix_fmt);
+    
+    frame_rate = 30;
+    v4l2_set_fps(&video_fd, &frame_rate);
+    printf("Device %s set frame rate %dfps\n", VIDEO_DEV, frame_rate);
+
     buffers = init_capt_mmap(VIDEO_DEV, video_fd, &n_buffers);
 #endif	
 
@@ -237,6 +247,7 @@ int main(const int argc, const char **argv) {
 
     if (cap_dev_pix_fmt != V4L2_PIX_FMT_H264) {
     	struct h264enc_params params;
+        if (width == 800) height = 560;
     	params.src_width = (width + 15) & ~15;
     	params.width = width;
     	params.src_height = (height + 15) & ~15;
@@ -470,13 +481,16 @@ int main(const int argc, const char **argv) {
         }
 
 #ifdef USE_FPS_MEASUREMENT
-            /* measure fps of the capture device */
-            clock_gettime(CLOCK_MONOTONIC, &tm[1]);
+            if (measurement_en) {
+                /* measure fps of the capture device */
+                clock_gettime(CLOCK_MONOTONIC, &tm[1]);
 
-            int dt_ms = (time_diff(&tm[0], &tm[1])) / 1000000;
-            if (dt_ms >= 1000) {
-                printf("CAPTURE FPS: %d\n",nframes_ps);
-                nframes_ps = 0;
+                int dt_ms = (time_diff(&tm[0], &tm[1])) / 1000000;
+                if (dt_ms >= 1000) {
+                    printf("CAPTURE FPS: %d\n",nframes_ps);
+                    nframes_ps = 0;
+                    measurement_en--;
+                }
             }
 #endif
         /* queue buffer */

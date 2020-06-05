@@ -34,5 +34,6 @@ void write_current_input_buf_to_lbck(int fd, struct v4l2_buffer *buff, int size_
 unsigned int fourcc(char a, char b, char c, char d);
 int init_mod(char *mod_name, char *arg);
 int remove_mod(char *mod_name);
+int v4l2_set_fps(int *fd, int *fps);
 
 #endif
