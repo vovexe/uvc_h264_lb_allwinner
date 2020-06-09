@@ -32,6 +32,7 @@
 #include <pthread.h>
 #include <signal.h>
 #include <time.h>
+#include <poll.h>
 #include <sys/syscall.h>
 #include <linux/videodev2.h>
 
@@ -123,6 +124,27 @@ int v4l2_set_fps(int *fd, int *fps) {
         return 1;
     }
     *fps = setfps.parm.capture.timeperframe.denominator;
+    return 0;
+}
+
+int v4l2_poll(int fd) {
+    int ret;
+    struct pollfd poll_fds[1];
+
+    poll_fds[0].fd = fd;
+    poll_fds[0].events = POLLIN;
+
+    ret = poll(poll_fds, 1, 10000);
+    if (ret < 0) {
+        printf("ERR(%s):poll error\n", __func__);
+        return -1;
+    }
+
+    if (ret == 0) {
+        printf("ERR(%s):No data in 10 secs..\n", __func__);
+        return -1;
+    }
+
     return 0;
 }
 

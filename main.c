@@ -42,7 +42,7 @@
 #define USE_V4L_DEV
 #define USE_FPS_MEASUREMENT
 #define USE_OVERLAY
-
+#define USE_POLL_INSTEAD_OF_SELECT
 
 #if defined(USE_OVERLAY)
 #define LEFT_CORNER     0
@@ -353,8 +353,9 @@ int main(const int argc, const char **argv) {
 #ifdef USE_FPS_MEASUREMENT
         struct timespec tm[2];
         clock_gettime(CLOCK_MONOTONIC, &tm[0]);
-#endif      
+#endif
 
+#ifndef USE_POLL_INSTEAD_OF_SELECT
         FD_ZERO(&fds);
         FD_SET(video_fd, &fds);
 
@@ -373,7 +374,14 @@ int main(const int argc, const char **argv) {
             fprintf(stderr, "select timeout\n");
             exit(EXIT_FAILURE);
         }
-
+#else
+        r = v4l2_poll(video_fd);
+        if(r < 0) {
+            if (EINTR == errno)  
+                continue;
+            errno_exit("poll");
+        }
+#endif        
         /* dequeue captured buffer */
         CLEAR(buf);
         buf.type = V4L2_BUF_TYPE_VIDEO_CAPTURE;

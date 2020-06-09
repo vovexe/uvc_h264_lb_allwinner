@@ -35,5 +35,6 @@ unsigned int fourcc(char a, char b, char c, char d);
 int init_mod(char *mod_name, char *arg);
 int remove_mod(char *mod_name);
 int v4l2_set_fps(int *fd, int *fps);
+int v4l2_poll(int fd);
 
 #endif
