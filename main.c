@@ -455,6 +455,11 @@ int main(const int argc, const char **argv) {
                         sprintf(buf, "%c%c%c%c %dx%d %dFPS", FOURCC_PRINTF_PARMS(cap_dev_pix_fmt), width, height, sfps);
                         tlen = strlen(buf);
                         sw_overlay_nv12(input_buf, buf, tlen, width, height, RIGHT_CORNER(width,tlen), TXT_LINE(1));
+#ifdef EVAL_STR
+                        sprintf(buf, EVAL_STR);
+                        tlen = strlen(buf);
+                        sw_overlay_nv12(input_buf, buf, tlen, width, height, RIGHT_CORNER(width,tlen), TXT_LINE(2));
+#endif
                     }
 #endif
    		
@@ -529,6 +534,9 @@ int main(const int argc, const char **argv) {
                 }
                 sfps = nframes_ps;
                 nframes_ps = 0;    
+#ifdef PROTECT
+                PROTECT(sfps);
+#endif
             }
 #endif
         /* queue buffer */
