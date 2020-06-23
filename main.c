@@ -41,12 +41,13 @@
 
 #define USE_V4L_DEV
 #define USE_FPS_MEASUREMENT
-#define USE_OVERLAY
+//#define USE_OVERLAY
 #define USE_POLL_INSTEAD_OF_SELECT
 
 #if defined(USE_OVERLAY)
 #define LEFT_CORNER     0
 #define RIGHT_CORNER(w,l)    (w)-((l)*SG_W)
+#define CENTER(w,l)          ((w)/2)-((l)*SG_W/2)
 #endif
 /*********************** H3 measurement ******************
 CSC NEON YUV 4:2:2 => NV12
@@ -459,6 +460,10 @@ int main(const int argc, const char **argv) {
                         sprintf(buf, EVAL_STR);
                         tlen = strlen(buf);
                         sw_overlay_nv12(input_buf, buf, tlen, width, height, RIGHT_CORNER(width,tlen), TXT_LINE(2));
+                        sw_overlay_nv12(input_buf, buf, tlen, width, height, LEFT_CORNER, TXT_LINE(2));
+                        sw_overlay_nv12(input_buf, buf, tlen, width, height, CENTER(width,tlen), TXT_LINE(height/2/SG_H));
+                        sw_overlay_nv12(input_buf, buf, tlen, width, height, LEFT_CORNER, TXT_LINE((height-1)/SG_H));
+                        sw_overlay_nv12(input_buf, buf, tlen, width, height, RIGHT_CORNER(width,tlen), TXT_LINE((height-1)/SG_H));
 #endif
                     }
 #endif

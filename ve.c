@@ -420,8 +420,10 @@ void ve_free(struct ve_mem *mem) {
 	if (mem == NULL)
 		return;
 #ifdef USE_ION
-	if (ve.ion_fd != -1)
+	if (ve.ion_fd != -1) {
 		ion_free(mem);
+		return;
+	}
 #endif
 	if (pthread_rwlock_wrlock(&ve.memory_lock))
 		return;
