@@ -1,9 +1,8 @@
-PATH=$PATH:/usr/local/angstrom/armv7linaro/bin/
-BIN_PATH = /home/ubobrov/develop/projects/intercom/rootfs/root
+BIN_PATH = /usr/bin
 
 CROSS_COMPILE = arm-linux-gnueabihf-
 
-CC = $(CROSS_COMPILE)gcc
+CC = /usr/bin/gcc
 
 CP = /usr/bin/sudo /bin/cp
 DEL = /bin/rm -f
@@ -21,8 +20,8 @@ SRC = main.c \
 CFLAGS = -Wall -O3 -I .
 
 LIBDIR=
-LDFLAGS = -lpthread -lrt
-LIBS =
+LDFLAGS = -lrt -lpthread
+LIBS = -L/usr/local/lib
 
 MAKEFLAGS += -rR --no-print-directory
 
@@ -36,7 +35,7 @@ DEP = $(addsuffix .d,$(basename $(SRC)))
 
 all: $(TARGET)
 $(TARGET): $(OBJ)
-	$(CC) $(LDFLAGS) $(OBJ) $(LIBS) -o $@
+	$(CC) $(LDFLAGS) $(OBJ) $(LIBS) -o $@ $(LDFLAGS)
 	-$(CP) $(TARGET) $(BIN_PATH)
 
 clean:
@@ -45,9 +44,9 @@ clean:
 	$(DEL) $(TARGET)
 
 %.o: %.c
-	$(CC) $(DEP_CFLAGS) $(DEFS) $(CFLAGS) -c $< -o $@
+	$(CC) $(DEP_CFLAGS) $(DEFS) $(CFLAGS) -c $< -o $@ $(LDFLAGS)
 
 %.o: %.S $(MKFILE) $(LDSCRIPT)
-	$(CC) -c $< -o $@	
+	$(CC) -c $< -o $@	$(LDFLAGS) 
 
 include $(wildcard $(DEP))
