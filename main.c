@@ -41,7 +41,7 @@
 
 #define USE_V4L_DEV
 #define USE_FPS_MEASUREMENT
-//#define USE_OVERLAY
+#define USE_OVERLAY
 #define USE_POLL_INSTEAD_OF_SELECT
 
 #if defined(USE_OVERLAY)
@@ -92,7 +92,8 @@ static struct pthr_start {
         .lb_codec = H264_LB,
         .lb_w = -1,
         .lb_h = -1,
-        .tofile = 0,
+        .tofile = 1,
+        .fname = "/mnt/sea/out_sunxi_tst.h264",
         .file_fd = -1,
         .pix_format = V4L2_PIX_FMT_H264,
     },
@@ -147,11 +148,26 @@ static int read_frame(int fd, void *buffer, int size) {
 	return 1;
 }
 
+void initialize_video_file(i) {
+	if (th_start[i].file_fd > 0)
+		close(th_start[i].file_fd);
+	char psrtzFilename[100]= {0};
+	time_t tTime = time(NULL);
+	struct tm tmTime = *localtime(&tTime);
+	sprintf(psrtzFilename, "/mnt/sea/capture/cap_%04d-%02d-%02d_%02d-%02d-%02d.h264", tmTime.tm_year+1900, tmTime.tm_mon+1, tmTime.tm_mday, tmTime.tm_hour, tmTime.tm_min, tmTime.tm_sec);
+	th_start[i].file_fd = open(/*th_start[i].fname*/psrtzFilename, O_WRONLY | O_CREAT | O_TRUNC, 0755);
+	if (-1 == th_start[i].file_fd) {
+		printf("Failed to open file for writing %s\n", /*th_start[i].fname*/psrtzFilename);
+		exit(EXIT_FAILURE);
+	}
+}
+
 /*
  *
  */
 int main(const int argc, const char **argv) {
 	int nframes_ps = 0, sfps = 0;
+	int iFrameCounterForFileRotate = 0;
 	int in = -1, out = -1;
 	int size_out;
 	char input_file[50] = "";
@@ -261,8 +277,8 @@ int main(const int argc, const char **argv) {
     	params.src_height = (height + 15) & ~15;
     	params.height = height;
     	params.src_format = H264_FMT_NV12;
-    	params.profile_idc = 77;
-    	params.level_idc = 41;
+    	params.profile_idc = 88; // Extended profile
+    	params.level_idc = 62; // 62 is highest
     	params.entropy_coding_mode = H264_EC_CABAC;
     	params.qp = 24;
     	params.keyframe_interval = 25;
@@ -330,11 +346,7 @@ int main(const int argc, const char **argv) {
 
         /* open the file for writing codec bitstream */
         if (th_start[i].tofile == 1) {
-            th_start[i].file_fd = open(th_start[i].fname, O_WRONLY | O_CREAT | O_TRUNC, 0755);
-            if (-1 == th_start[i].file_fd) {
-                printf("Failed to open file for writing %s\n", th_start[i].fname);
-                exit(EXIT_FAILURE);
-            }
+			initialize_video_file(i);
         }
     }
 
@@ -449,7 +461,13 @@ int main(const int argc, const char **argv) {
                         sprintf(buf, "%04d-%02d-%02d %02d:%02d:%02d", 
                         tm.tm_year+1900, tm.tm_mon+1, tm.tm_mday,
                         tm.tm_hour, tm.tm_min, tm.tm_sec);
-                        // line 1
+						//filerotate
+						if (0 == tm.tm_min && 0 == tm.tm_sec && iFrameCounterForFileRotate > frame_rate * 100) { 
+							initialize_video_file(i); 
+							iFrameCounterForFileRotate = 0;
+						}
+						iFrameCounterForFileRotate++;
+                        // overlay line 1
                         int tlen = strlen(buf);
                         sw_overlay_nv12(input_buf, buf, tlen, width, height, RIGHT_CORNER(width,tlen), TXT_LINE(0));
                         // line 2
